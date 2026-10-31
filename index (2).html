@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rekapan by chewyzc</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Bagel+Fat+One&display=swap" rel="stylesheet">
+<style>
+:root{--cream:#FFFBFE;--sage:#8FCFF2;--mint:#C9F2D6;--sky:#CDEBFF;--pink:#FFD0E8;--lav:#E6DCFF;--beige:#FFE8F2;--ink:#3B2A5A;--brown:#7A66A0;--bad:#a8505f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--cream:#FFF9EF}}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:Fredoka,system-ui,sans-serif;color:var(--ink);background:linear-gradient(#BFE4FF,#FFD9EC 55%,#DDF7E6);min-height:100vh;padding-bottom:84px}
+#bg{position:fixed;inset:0;z-index:0;pointer-events:none}#bg svg{width:100%;height:100%;display:block}.fy{animation:fy 6s ease-in-out infinite}@keyframes fy{50%{transform:translate(6px,-8px)}}@media(prefers-reduced-motion:reduce){.fy{animation:none}}.card.login{margin-top:12vh;text-align:center;background:linear-gradient(#FF9ACB,#FFC1E3);border-color:#FF6FB5;box-shadow:4px 4px 0 #FFD9EC}.card.login .note{color:#4a1f45}.login input{background:#FFE9F4;border-color:#FF8FC7}h1{font-family:'Bagel Fat One',Fredoka,system-ui,sans-serif;font-weight:400}
+main{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:14px}
+header.top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+header.top h1{font-size:20px;margin:0;flex:1}
+.card{background:var(--cream);border:2px solid var(--sage);border-radius:22px;padding:14px;margin-bottom:12px;box-shadow:4px 4px 0 #FFC1E3}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{border-radius:20px;padding:12px;border:1.5px solid #fff8}
+.stat small{display:block;font-weight:500}.stat b{font-size:19px}
+input,select,textarea,button{font:inherit;color:inherit}
+input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--sage);border-radius:14px;background:#fff;margin:3px 0 8px}
+label{font-size:13px;font-weight:700}
+button{border:0;border-radius:999px;padding:10px 16px;background:var(--sage);font-weight:700;cursor:pointer}
+button.pri{background:var(--ink);color:var(--cream)}button.del{background:var(--pink)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+nav.bar{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;background:var(--cream);border-top:1.5px solid var(--sage);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.bar a{flex:1;text-align:center;padding:9px 2px;font-size:11px;font-weight:700;color:var(--brown);cursor:pointer}
+nav.bar a span{display:block;font-size:20px}nav.bar a.on{color:var(--ink);background:var(--mint)}
+.o{border-top:1px dashed var(--sage);padding:9px 0}.o:first-child{border:0}
+.tag{display:inline-block;font-size:11px;padding:2px 9px;border-radius:99px;background:var(--lav);margin-right:4px}.tag.good{background:#BFE3B8;color:#245a2c}.tag.bad{background:#F2B8BE;color:#7a2230}.tag.wait{background:#FBE9A8;color:#6b5a1a}.pf{width:52px;height:52px;object-fit:cover;border-radius:10px;border:1.5px solid var(--sage);vertical-align:middle}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{flex:1}
+.bars{display:flex;align-items:flex-end;gap:3px;height:90px}.bars i{flex:1;background:var(--sage);border-radius:6px 6px 0 0;min-height:2px}
+#toast{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--cream);padding:10px 18px;border-radius:99px;z-index:9;display:none}
+.note{font-size:12px;color:var(--brown)}.empty{text-align:center;padding:22px 8px;color:var(--brown)}
+@media(min-width:700px){.grid{grid-template-columns:repeat(3,1fr)}}
+@media(prefers-reduced-motion:no-preference){.float{animation:fl 5s ease-in-out infinite}@keyframes fl{50%{transform:translateY(-5px)}}}
+</style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script></head><body>
+<div id="bg" aria-hidden="true"></div>
+<div id="toast"></div><main id="app"></main>
+<nav class="bar" id="nav"></nav>
+<script>
+const K='rekapan_v1';let S;
+try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
+S=S||{orders:[],master:{produk:['Netflix','Canva','Disney+'],tipe:['Personal','Sharing','Family'],durasi:['1 bulan','3 bulan','1 tahun'],sumber:['Shopee','WhatsApp','Instagram']},klaim:[]};
+const cache={};let uref=null,unsub=null;const js=o=>JSON.stringify(o,Object.keys(o).sort());
+const save=()=>{if(!uref)return;const ids=new Set(S.orders.map(o=>o.id));S.orders.forEach(o=>{const j=js(o);if(cache[o.id]!==j){cache[o.id]=j;uref.collection('orders').doc(o.id).set(o).catch(()=>toast('Gagal menyimpan, cek internet'))}});Object.keys(cache).forEach(id=>{if(id!=='__m'&&!ids.has(id)){delete cache[id];uref.collection('orders').doc(id).delete().catch(()=>{})}});const m=JSON.stringify(S.master);if(cache.__m!==m){cache.__m=m;uref.collection('meta').doc('master').set({d:m}).catch(()=>toast('Gagal menyimpan pilihan'))}};
+const rp=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n||0);
+const tg=d=>new Date(d).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const today=()=>new Date().toISOString().slice(0,10);
+const real=o=>o.bayar==='Lunas'&&o.status!=='Batal';
+const laba=o=>real(o)?o.jual-o.modal-(o.refund||0):0;
+const gEnd=o=>{const d=new Date(o.gMulai);d.setDate(d.getDate()+(+o.gHari||0));return d.toISOString().slice(0,10)};
+const gStat=o=>{if(!o.gHari)return'Tanpa garansi';const b=bk(o);if(b==='void')return'Garansi hangus';if(b==='wait')return'Menunggu bukti';if(o.status==='Klaim')return'Klaim garansi';const t=today(),e=gEnd(o);if(t<o.gMulai)return'Belum dimulai';if(t>e)return'Berakhir';return(new Date(e)-new Date(t))/864e5<=3?'Mendekati akhir':'Aktif'};
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2200)}
+const tabs=[['dash','🌿','Beranda'],['orders','📜','Order'],['add','🌼','Tambah'],['rekap','🍄','Rekap'],['garansi','🛡️','Garansi'],['kelola','🧺','Kelola']];
+let page='login',periode='bulan',q='';
+function go(p){if(p!=='add')editId=null;page=p;render()}
+function render(){
+document.getElementById('nav').innerHTML=tabs.map(t=>`<a class="${t[0]===page?'on':''}" onclick="go('${t[0]}')"><span>${t[1]}</span>${t[2]}</a>`).join('');
+document.getElementById('app').innerHTML=({login,dash,orders,add,rekap,garansi,kelola})[page]();document.getElementById('nav').style.display=page==='login'?'none':'flex';setBg(page==='login'?'login':'app');if(page==='add'&&editId)fillF();scrollTo(0,0)}
+const head=t=>`<header class="top"><span class="float" style="font-size:30px;color:#FF8FC7">✦</span><span hidden>🍃</span><h1>${t}<br><small class="note">Rekapan by chewyzc · ${tg(today())}</small></h1></header>`;
+function inRange(o){const d=o.tgl,t=today(),m=t.slice(0,7);if(periode==='hari')return d===t;if(periode==='6'){const x=new Date();x.setMonth(x.getMonth()-5,1);return d>=x.toISOString().slice(0,10)}if(periode==='7')return d>=new Date(Date.now()-6*864e5).toISOString().slice(0,10);if(periode==='lalu'){const x=new Date();x.setMonth(x.getMonth()-1,1);return d.slice(0,7)===x.toISOString().slice(0,7)}return d.slice(0,7)===m}
+function sum(l){const r=l.filter(real);return{n:l.length,omzet:r.reduce((a,o)=>a+o.jual,0),modal:r.reduce((a,o)=>a+o.modal,0),laba:l.reduce((a,o)=>a+laba(o),0),pend:l.filter(o=>o.bayar!=='Lunas'&&o.status!=='Batal').length}}
+function dash(){const l=S.orders.filter(inRange),s=sum(l),td=S.orders.filter(o=>o.tgl===today()),g=S.orders.filter(o=>['Aktif','Mendekati akhir'].includes(gStat(o))),near=S.orders.filter(o=>gStat(o)==='Mendekati akhir');
+const days=[...Array(14)].map((_,i)=>{const d=new Date(Date.now()-(13-i)*864e5).toISOString().slice(0,10);return S.orders.filter(o=>o.tgl===d).length}),mx=Math.max(1,...days);
+const c=['#FFD0E8','#CDEBFF','#C9F2D6','#FFD0E8','#CDEBFF','#C9F2D6'];
+const st=[['Order periode',s.n],['Omzet',rp(s.omzet)],['Modal',rp(s.modal)],['Laba',rp(s.laba)],['Order hari ini',td.length],['Pending bayar',s.pend],['Dalam garansi',g.length]];
+return head('Hi, Dopiee!')+`<select onchange="periode=this.value;render()">${[['hari','Hari ini'],['7','7 hari terakhir'],['bulan','Bulan ini'],['lalu','Bulan lalu'],['6','6 bulan terakhir']].map(x=>`<option value="${x[0]}" ${periode===x[0]?'selected':''}>${x[1]}</option>`).join('')}</select>
+<div class="grid">${st.map((x,i)=>`<div class="stat" style="background:${c[i%6]};position:relative"><span style="position:absolute;right:8px;top:8px">${SI[i%7]}</span><small>${x[0]}</small><b>${x[1]}</b></div>`).join('')}</div>
+<div class="card" style="margin-top:12px"><b>Order 14 hari terakhir</b><div class="bars">${days.map(d=>`<i style="height:${d/mx*100}%" title="${d}"></i>`).join('')}</div></div>
+${near.length?`<div class="card" style="background:var(--pink)">⏰ ${near.length} garansi mendekati akhir: ${near.map(o=>esc(o.nama)).join(', ')}</div>`:''}
+<div class="card"><b>Order terbaru</b>${S.orders.length?S.orders.slice(-4).reverse().map(row).join(''):'<div class="empty">🌱 Belum ada order. Tambahkan yang pertama lewat menu Tambah.</div>'}</div>`}
+const row=o=>`<div class="o"><div class="row"><b>${esc(o.nama)}</b><span class="sp"></span><b>${rp(o.jual)}</b></div><div class="note">${esc(o.id)} · ${esc(o.produk)} ${esc(o.tipe)} · ${esc(o.durasi)} · ${tg(o.tgl)}</div><span class="tag">${o.bayar}</span><span class="tag">${o.status}</span><span class="tag ${gc(o)}">${gStat(o)}</span>${o.bukti?`<img class="pf" src="${o.bukti}" alt="Bukti login ${esc(o.nama)}">`:''}</div>`;
+function orders(){const l=S.orders.filter(o=>!q||[o.nama,o.wa,o.email,o.id,o.produk].join(' ').toLowerCase().includes(q.toLowerCase())).reverse();
+return head('Data Order')+`<input placeholder="Cari nama, WA, email, ID, produk…" value="${esc(q)}" autocomplete="off" oninput="q=this.value;document.getElementById('ol').innerHTML=olist()"><div class="row"><button onclick="exp()">Ekspor CSV</button></div>
+<div class="card" id="ol" style="margin-top:10px">${l.length?l.map(o=>row(o)+`<div class="row"><span class="note">Laba ${rp(laba(o))}</span><span class="sp"></span><button onclick="ed('${o.id}')">Edit</button><button onclick="up('${o.id}')">Bukti</button><button onclick="dup('${o.id}')">Duplikat</button><button onclick="nextSt('${o.id}')">Status ➜</button><button class="del" onclick="hapus('${o.id}')">Hapus</button></div>`).join(''):'<div class="empty">Tidak ada order yang cocok.</div>'}</div>`}
+function nextSt(id){const o=S.orders.find(x=>x.id===id),a=['Pending','Diproses','Selesai','Klaim','Batal'];o.status=a[(a.indexOf(o.status)+1)%a.length];save();render()}
+function hapus(id){if(confirm('Hapus order '+id+'? Tindakan ini tidak bisa dibatalkan.')){S.orders=S.orders.filter(o=>o.id!==id);save();render();toast('Order dihapus')}}
+function dup(id){const o={...S.orders.find(x=>x.id===id),id:nid(),dibuat:Date.now(),bukti:null,buktiAt:null,tgl:today(),gMulai:today()};S.orders.push(o);save();render();toast('Order diduplikasi')}
+const nid=()=>'ORD-'+Date.now().toString(36).toUpperCase();
+function exp(){const h=['id','tgl','nama','wa','email','produk','tipe','durasi','sumber','admin','jual','modal','bayar','status'];const c=[h.join(',')].concat(S.orders.map(o=>h.map(k=>'"'+String(o[k]??'').replace(/"/g,'""')+'"').join(','))).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:'text/csv'}));a.download='order.csv';a.click()}
+const opt=(k,v)=>S.master[k].map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('');
+function add(){return head(editId?'Edit Order':'Tambah Order')+`<div class="card"><form id="f" onsubmit="return false">
+<label>Nama pelanggan *</label><input name="nama"><label>WhatsApp *</label><input name="wa" inputmode="tel"><label>Email pelanggan</label><input name="email" type="email">
+<label>Produk</label><select name="produk">${opt('produk')}</select><label>Tipe akun</label><select name="tipe">${opt('tipe')}</select><label>Durasi</label><select name="durasi">${opt('durasi')}</select><label>Sumber penjualan</label><select name="sumber">${opt('sumber')}</select>
+<label>Admin/FH</label><input name="admin"><label>Harga jual (Rp) *</label><input name="jual" type="number" min="0" inputmode="numeric" oninput="pv()"><label>Modal (Rp) *</label><input name="modal" type="number" min="0" inputmode="numeric" oninput="pv()">
+<div class="note" id="pv">Laba: Rp0</div>
+<label>Metode bayar</label><select name="metode"><option>QRIS</option><option>Transfer</option><option>E-wallet</option></select><label>Status bayar</label><select name="bayar"><option>Lunas</option><option>Belum</option></select>
+<label>Mulai garansi</label><input name="gMulai" type="date" value="${today()}"><label>Garansi (hari)</label><input name="gHari" type="number" min="0" value="30"><label>Catatan</label><textarea name="cat" rows="2"></textarea><label>Bukti login berhasil (screenshot)</label><input name="bukti" type="file" accept="image/jpeg,image/png,image/webp"><div class="note" style="margin-bottom:8px">Unggah maksimal 24 jam setelah order disimpan. Ada bukti tepat waktu: garansi aktif (hijau). Tidak ada atau terlambat: garansi hangus (merah). Bisa diunggah belakangan lewat tombol Bukti di menu Order.</div>
+<div class="row"><button class="pri" id="sv" onclick="submitO(false)">Simpan order</button><button onclick="submitO(true)">Simpan &amp; tambah lagi</button><button class="del" onclick="go('orders')">Batal</button></div></form></div>`}
+function pv(){const f=document.forms.f;document.getElementById('pv').textContent='Laba: '+rp(f.jual.value-f.modal.value)}
+async function submitO(again){const f=document.forms.f,v=Object.fromEntries(new FormData(f));if(!v.nama.trim()||!v.wa.trim()||v.jual===''||v.modal===''){return toast('Lengkapi nama, WA, harga jual, dan modal')}
+if(v.email&&!/^\S+@\S+\.\S+$/.test(v.email))return toast('Format email salah');
+const fl=f.bukti.files[0];delete v.bukti;let b=null;if(fl){if(!/^image\/(jpeg|png|webp)$/.test(fl.type))return toast('Bukti harus JPG, PNG, atau WEBP');if(fl.size>8e6)return toast('Ukuran foto maksimal 8 MB');try{b=await shrink(fl)}catch(e){return toast('Foto gagal dibaca')}}const now=Date.now();
+if(editId){const o=S.orders.find(x=>x.id===editId);Object.assign(o,{...v,jual:+v.jual,modal:+v.modal,gHari:+v.gHari});if(b){o.bukti=b;o.buktiAt=now}save();toast('Perubahan tersimpan');editId=null;return go('orders')}
+S.orders.push({...v,id:nid(),dibuat:now,bukti:b,buktiAt:b?now:null,tgl:today(),jual:+v.jual,modal:+v.modal,gHari:+v.gHari,status:'Pending',refund:0});save();toast('Order tersimpan 🌼');again?add_r():go('orders')}
+const add_r=()=>{page='add';render()};
+function rekap(){const by={};S.orders.forEach(o=>{(by[o.tgl]=by[o.tgl]||[]).push(o)});const ds=Object.keys(by).sort().reverse().slice(0,10);
+const pr={};S.orders.filter(real).forEach(o=>pr[o.produk]=(pr[o.produk]||0)+1);const top=Object.entries(pr).sort((a,b)=>b[1]-a[1])[0];
+const m=today().slice(0,7),sm=sum(S.orders.filter(o=>o.tgl.slice(0,7)===m));
+return head('Rekap')+`<div class="card"><b>Bulan ini</b><p>${sm.n} order · Omzet ${rp(sm.omzet)} · Modal ${rp(sm.modal)}<br>Laba ${rp(sm.laba)}${top?`<br>Produk terlaris: ${esc(top[0])} (${top[1]})`:''}</p><div class="note">Hanya order lunas &amp; tidak batal dihitung sebagai omzet.</div></div>
+<div class="card"><b>Rekap harian</b>${ds.length?ds.map(d=>{const s=sum(by[d]);return`<div class="o"><b>${tg(d)}</b><div class="note">${s.n} order · pending ${s.pend} · omzet ${rp(s.omzet)} · laba ${rp(s.laba)}</div></div>`}).join(''):'<div class="empty">Belum ada data untuk direkap.</div>'}</div>`}
+function garansi(){const l=S.orders.filter(o=>o.gHari);return head('Garansi')+`<div class="card">${l.length?l.map(o=>`<div class="o"><b>${esc(o.nama)}</b> <span class="tag ${gc(o)}">${gStat(o)}</span><div class="note">${esc(o.produk)} · ${tg(o.gMulai)} s/d ${tg(gEnd(o))}</div></div>`).join(''):'<div class="empty">Belum ada garansi aktif.</div>'}</div>`}
+function kelola(){const L={produk:'Produk',tipe:'Tipe akun',durasi:'Durasi',sumber:'Sumber penjualan'};
+return head('Kelola')+Object.keys(L).map(k=>`<div class="card"><b>${L[k]}</b><div>${S.master[k].map((x,i)=>`<span class="tag">${esc(x)} <a onclick="delM('${k}',${i})" style="cursor:pointer">✕</a></span>`).join('')}</div><div class="row" style="margin-top:8px"><input id="m_${k}" placeholder="Tambah ${L[k].toLowerCase()}" style="flex:1;margin:0"><button onclick="addM('${k}')">Tambah</button></div></div>`).join('')+`<div class="card"><button onclick="imp()">Impor data lama dari browser ini</button></div><div class="card"><button class="del" onclick="logout()">Keluar</button></div><div class="card note"><b>Catatan prototipe</b><br>Data tersimpan online di akunmu dan sinkron di semua perangkat. Penyimpanan kredensial akun digital terenkripsi belum ada.</div>`}
+function addM(k){const v=document.getElementById('m_'+k).value.trim();if(!v)return toast('Isi nama dulu');if(S.master[k].includes(v))return toast('Sudah ada');S.master[k].push(v);save();render()}
+function delM(k,i){if(confirm('Hapus pilihan ini? Order lama tetap menyimpan namanya.')){S.master[k].splice(i,1);save();render()}}
+const cl=(x,y,s)=>`<g transform="translate(${x} ${y}) scale(${s})" fill="#fff" opacity=".92"><ellipse rx="34" ry="12"/><circle cx="-12" cy="-8" r="14"/><circle cx="8" cy="-12" r="17"/><circle cx="24" cy="-4" r="10"/></g>`;
+const tr=(x,y,s,c='#8fae88')=>`<g transform="translate(${x} ${y}) scale(${s})"><rect x="-3" width="6" height="22" fill="#b79b82"/><circle cy="-8" r="20" fill="${c}"/><circle cx="-12" cy="2" r="13" fill="${c}"/><circle cx="13" cy="3" r="13" fill="#a9c4a1"/></g>`;
+const fw=(x,y,c)=>`<g transform="translate(${x} ${y})"><path d="M0 0v10" stroke="#8fae88" stroke-width="1.5"/><g fill="${c}"><circle cy="-3" r="2.6"/><circle cx="3" r="2.6"/><circle cx="-3" r="2.6"/><circle cy="3" r="2.6"/></g><circle r="1.8" fill="#FBE9A8"/></g>`;
+const mu=(x,y,s)=>`<g transform="translate(${x} ${y}) scale(${s})"><rect x="-4" width="8" height="9" rx="3" fill="#FFF9EF"/><path d="M-13 1a13 11 0 0 1 26 0z" fill="#F3DCE4"/><circle cx="-5" cy="-4" r="1.8" fill="#fff"/><circle cx="4" cy="-6" r="1.4" fill="#fff"/></g>`;
+const bf=(x,y,c)=>`<g class="fy"><g transform="translate(${x} ${y})"><ellipse cx="-4" rx="5" ry="3.5" fill="${c}" transform="rotate(-20)"/><ellipse cx="4" rx="5" ry="3.5" fill="${c}" transform="rotate(20)"/></g></g>`;
+const hs=(x,y,s)=>`<g transform="translate(${x} ${y}) scale(${s})"><rect x="-22" y="-20" width="44" height="26" fill="#FFF9EF" stroke="#E9D6BC" stroke-width="1.5"/><path d="M-28 -18L0-42L28-18Z" fill="#E7B7C4"/><rect x="-5" y="-8" width="10" height="14" rx="5" fill="#B7957D"/><rect x="9" y="-16" width="8" height="8" fill="#DCEAF5"/><rect x="-17" y="-16" width="8" height="8" fill="#DCEAF5"/><rect x="12" y="-40" width="6" height="12" fill="#D8C3A8"/></g>`;
+const sp=(x,y,s)=>`<g transform="translate(${x} ${y}) scale(${s})"><path d="M0-16C12-16 14-2 0 10C-14-2-12-16 0-16Z" fill="#DDEBDD" stroke="#B8CDB0" stroke-width="1.5"/><circle cx="-4" cy="-4" r="1.3" fill="#465747"/><circle cx="4" cy="-4" r="1.3" fill="#465747"/><path d="M-6-16Q0-26 6-16" fill="none" stroke="#8fae88" stroke-width="2"/></g>`;
+const fl5=(a,y,cs)=>a.map((x,i)=>fw(x,y+(i%2)*8,cs[i%cs.length])).join('');
+const DEF=`<defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#CFE3F3"/><stop offset=".6" stop-color="#E8E1F2"/><stop offset="1" stop-color="#FBE9EF"/></linearGradient><filter id="wc"><feTurbulence type="fractalNoise" baseFrequency=".02 .03" numOctaves="3" seed="4"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 .97 0 0 0 0 .9 0 0 0 .5 -.1"/></filter></defs><rect width="400" height="800" fill="url(#sk)"/>`;
+const WC='<rect width="400" height="800" filter="url(#wc)" opacity=".3"/>';
+const SC={app:`<svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMax slice">${DEF}${cl(70,120,1.2)}${cl(310,200,1)}${cl(180,560,.8)}${cl(350,590,.7)}<path d="M0 640Q90 560 190 620T400 590V800H0Z" fill="#E8E1F2"/><path d="M0 690Q130 610 250 670T400 650V800H0Z" fill="#DDEBDD"/>${hs(318,656,1)}<path d="M0 740Q120 690 230 735T400 715V800H0Z" fill="#B8CDB0"/>${tr(40,690,1.1)}${tr(90,705,.8,'#a9c4a1')}${tr(375,700,.9)}${fl5([120,150,185,220,260],752,['#F3DCE4','#FBE9A8','#E8E1F2'])}${mu(300,765,1)}${mu(30,770,.8)}${bf(200,500,'#F3DCE4')}${bf(60,300,'#FBE9A8')}${bf(330,420,'#E8E1F2')}${WC}</svg>`,
+login:`<svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMax slice">${DEF}<circle cx="320" cy="150" r="70" fill="#FBF0C8" opacity=".6"/>${cl(90,90,1.3)}${cl(300,260,1)}${cl(60,380,.8)}${cl(150,590,.8)}<path d="M0 600Q100 540 210 590T400 560V800H0Z" fill="#E8E1F2"/><path d="M0 660Q140 590 260 650T400 630V800H0Z" fill="#DDEBDD"/>${hs(200,690,2.2)}<path d="M0 730Q150 700 260 740T400 720V800H0Z" fill="#B8CDB0"/><path d="M185 700Q170 750 120 800H250Q215 750 215 700Z" fill="#E9D6BC"/>${tr(40,650,2,'#8fae88')}${tr(360,680,1.5,'#a9c4a1')}${fl5([20,60,100,290,320,350,380],760,['#F3DCE4','#FBE9A8','#E8E1F2'])}${mu(270,775,1.2)}${sp(110,700,1.4)}${bf(250,480,'#F3DCE4')}${bf(110,440,'#FBE9A8')}${bf(340,380,'#E8E1F2')}${WC}</svg>`};
+const sv=s=>`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#465747" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round">${s}</svg>`;
+const I={dash:sv('<path d="M3 12L12 4l9 8v8H3z" fill="#F3DCE4"/><rect x="10" y="14" width="4" height="6" rx="2" fill="#E9D6BC"/><path d="M16 6V3h2v5"/>'),orders:sv('<path d="M6 4h12v14a2 2 0 0 1-2 2H6z" fill="#FFF9EF"/><path d="M9 9h6M9 13h6"/>'),add:sv('<g fill="#F3DCE4"><circle cx="12" cy="6" r="3.5"/><circle cx="18" cy="12" r="3.5"/><circle cx="12" cy="18" r="3.5"/><circle cx="6" cy="12" r="3.5"/></g><circle cx="12" cy="12" r="2.5" fill="#FBE9A8"/>'),rekap:sv('<path d="M3 12a9 8 0 0 1 18 0z" fill="#F3DCE4"/><path d="M9 12v7h6v-7" fill="#FFF9EF"/><circle cx="8" cy="9" r="1" fill="#fff"/><circle cx="14" cy="8" r="1.2" fill="#fff"/>'),garansi:sv('<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z" fill="#DDEBDD"/><path d="M12 17c-3-3-3-6 0-8 3 2 3 5 0 8z" fill="#B8CDB0"/>'),kelola:sv('<path d="M4 11h16l-2 9H6z" fill="#E9D6BC"/><path d="M8 11a4 6 0 0 1 8 0"/>')};
+tabs.forEach(t=>t[1]=I[t[0]]);
+const SI=[sv('<path d="M7 10h10v3a5 6 0 0 1-10 0z" fill="#E9D6BC"/><path d="M6 10a6 5 0 0 1 12 0z" fill="#B8CDB0"/><path d="M12 5V3"/>'),I.orders,sv('<circle cx="12" cy="12" r="8" fill="#FBE9A8"/><path d="M12 16c-3-3-2-6 0-8 2 2 3 5 0 8z" fill="#DDEBDD"/>'),sv('<path d="M7 7h10v12H7z" fill="#E8E1F2"/><path d="M8 4h8v3H8z" fill="#E9D6BC"/>'),sv('<path d="M12 21v-9M12 12c-5 0-6-6-6-6s6 0 6 6zM12 14c4 0 6-5 6-5s-6-1-6 5z" fill="#DDEBDD"/>'),sv('<path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 10 0 4 4 0 0 1 0 8z" fill="#DCEAF5"/>'),I.garansi];
+const bc=(x,y,s)=>`<g transform="translate(${x} ${y}) scale(${s})"><ellipse cy="12" rx="60" ry="12" fill="#CFDDEE"/><g fill="#fff"><ellipse cy="6" rx="58" ry="16"/><circle cx="-22" cy="-6" r="22"/><circle cx="8" cy="-16" r="28"/><circle cx="36" cy="-4" r="20"/></g></g>`;
+const sm=(x,y)=>`<g fill="#fff" opacity=".65"><circle cx="${x}" cy="${y}" r="5"/><circle cx="${x+6}" cy="${y-11}" r="7"/><circle cx="${x+15}" cy="${y-24}" r="9"/></g>`;
+const ds=(x,y)=>`<g class="fy"><circle cx="${x}" cy="${y}" r="2" fill="#fff"/><path d="M${x} ${y}l-5 7" stroke="#fff"/></g>`;
+const wm='<g transform="translate(110 640)"><path d="M-6 0L-3-26h6L6 0z" fill="#FFF9EF" stroke="#E9D6BC"/><g stroke="#B7957D" stroke-width="2"><path d="M0-26l-16-10M0-26l16 10M0-26l-10 16M0-26l10-16"/></g></g>';
+SC.app=SC.app.replace('</svg>',bc(90,150,1.1)+bc(320,260,.9)+wm+sm(335,604)+ds(60,520)+ds(250,450)+ds(350,360)+'</svg>');
+SC.login=SC.login.replace('</svg>',bc(110,120,1.3)+bc(310,300,.9)+sm(236,590)+ds(80,500)+ds(300,430)+ds(200,360)+'</svg>');
+const bk=o=>{const t0=o.dibuat||new Date(o.tgl).getTime();if(o.bukti&&o.buktiAt&&o.buktiAt-t0<=864e5)return'ok';return Date.now()-t0>864e5?'void':'wait'};
+const gc=o=>{const s=gStat(o);return s==='Garansi hangus'?'bad':s==='Menunggu bukti'?'wait':['Aktif','Mendekati akhir'].includes(s)?'good':''};
+const shrink=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const s=Math.min(1,720/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.7))};i.onerror=rej;i.src=r.result};r.onerror=rej;r.readAsDataURL(f)});
+function up(id){const x=document.createElement('input');x.type='file';x.accept='image/jpeg,image/png,image/webp';x.onchange=async()=>{const fl=x.files[0];if(!fl)return;try{const o=S.orders.find(z=>z.id===id);o.bukti=await shrink(fl);o.buktiAt=Date.now();save();render();toast(bk(o)==='ok'?'Bukti diterima, garansi aktif':'Bukti lewat 24 jam, garansi hangus')}catch(e){toast('Gagal menyimpan bukti')}};x.click()}
+let editId=null;
+function ed(id){editId=id;page='add';render()}
+function fillF(){const o=S.orders.find(x=>x.id===editId),f=document.forms.f;if(!o)return;['nama','wa','email','produk','tipe','durasi','sumber','admin','jual','modal','metode','bayar','gMulai','gHari','cat'].forEach(k=>{if(f[k]&&o[k]!=null)f[k].value=o[k]});pv()}
+function olist(){const d=document.createElement('div');d.innerHTML=orders();return d.querySelector('#ol').innerHTML}
+const sv2=s=>sv(s).replace('#465747','#3B2A5A');
+Object.assign(I,{dash:sv2('<path d="M12 21C3 14 2 9 6 6C9 4 11 6 12 8C13 6 15 4 18 6C22 9 21 14 12 21Z" fill="#FFC1E3"/>'),orders:sv2('<path d="M12 12L3 7v10zM12 12l9-5v10z" fill="#A8D8FF"/><circle cx="12" cy="12" r="2.5" fill="#FFC1E3"/>'),add:sv2('<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" fill="#FFF3A8"/>'),rekap:sv2('<circle cx="8" cy="17" r="4" fill="#FF8FC7"/><circle cx="16.5" cy="16" r="4" fill="#FF8FC7"/><path d="M8 13C9 8 12 5 15 3M16.5 12C16 8 15.5 6 15 3" fill="none"/><path d="M15 3c3 0 5 1 6 3-3 1-5 0-6-3z" fill="#B5F0C8"/>'),garansi:sv2('<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z" fill="#B5F0C8"/><path d="M12 16C8 13 8 10.5 9.5 10 11 9.5 12 11 12 11s1-1.5 2.5-1S16 13 12 16z" fill="#FF8FC7"/>'),kelola:sv2('<circle cx="12" cy="12" r="9" fill="#CDEBFF"/><path d="M7 10a6 6 0 0 1 4-4" fill="none"/>')});
+tabs.forEach(t=>t[1]=I[t[0]]);
+SI.length=0;SI.push(I.orders,I.add,I.rekap,I.dash,I.kelola,I.garansi,I.garansi);
+const YD='<defs><linearGradient id="y" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE4FF"/><stop offset=".55" stop-color="#FFD9EC"/><stop offset="1" stop-color="#DDF7E6"/></linearGradient></defs><rect width="400" height="800" fill="url(#y)"/>';
+const s4=(x,y,s,c)=>`<g class="fy"><path transform="translate(${x} ${y}) scale(${s})" d="M0-12L3-3 12 0 3 3 0 12-3 3-12 0-3-3z" fill="${c}"/></g>`;
+const ht=(x,y,s,c)=>`<g class="fy"><path transform="translate(${x} ${y}) scale(${s})" d="M0 9C-12 1-10-8-4-8C-2-8 0-6 0-5C0-6 2-8 4-8C10-8 12 1 0 9Z" fill="${c}"/></g>`;
+const bb=(x,y,r)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" fill-opacity=".35" stroke="#fff" stroke-width="2"/>`;
+const wv='<path d="M0 700Q100 650 200 695T400 670V800H0Z" fill="#FFC1E3"/><path d="M0 740Q120 700 250 740T400 720V800H0Z" fill="#A8D8FF"/><path d="M0 775Q130 745 260 775T400 760V800H0Z" fill="#B5F0C8"/>';
+SC.app=`<svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMax slice">${YD}${bb(60,160,26)}${bb(340,260,18)}${bb(300,90,12)}${s4(120,120,1.6,'#fff')}${s4(330,180,1.1,'#FFF3A8')}${s4(50,420,1.3,'#fff')}${ht(350,450,1.6,'#FF8FC7')}${ht(70,560,1.2,'#fff')}${wv}${ht(80,720,1.4,'#fff')}${s4(300,725,1.4,'#FFF3A8')}</svg>`;
+SC.login=`<svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMax slice">${YD}<circle cx="110" cy="600" r="105" fill="#FFC1E3"/><circle cx="295" cy="580" r="95" fill="#A8D8FF"/><circle cx="200" cy="710" r="110" fill="#B5F0C8"/>${bb(80,555,22)}${bb(270,540,18)}${bb(180,670,20)}${s4(200,200,3.2,'#fff')}${s4(80,110,1.6,'#FFF3A8')}${s4(320,130,2,'#fff')}${ht(60,340,2,'#FF8FC7')}${ht(340,380,1.6,'#fff')}${bb(250,300,16)}</svg>`;
+let authMode='login';
+const hx=async(p,s)=>{const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(p),'PBKDF2',false,['deriveBits']);const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(s),iterations:100000,hash:'SHA-256'},k,256);return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')};
+const acc=()=>{try{return JSON.parse(localStorage.getItem('rekapan_acc'))||{}}catch(e){return{}}};
+async function authGo(){const e=document.getElementById('ae').value.trim().toLowerCase(),p=document.getElementById('ap').value,A=acc();
+if(!/^\S+@\S+\.\S+$/.test(e))return toast('Format email salah');
+if(authMode==='daftar'){const p2=document.getElementById('ap2').value;if(p.length<8)return toast('Kata sandi minimal 8 karakter');if(p!==p2)return toast('Ulangi kata sandi tidak sama');if(A[e])return toast('Email sudah terdaftar');const s=crypto.getRandomValues(new Uint8Array(8)).join('');A[e]={s,h:await hx(p,s)};try{localStorage.setItem('rekapan_acc',JSON.stringify(A))}catch(x){return toast('Gagal menyimpan akun')}toast('Akun dibuat');return go('dash')}
+const a=A[e];if(!a||a.h!==await hx(p,a.s))return toast('Email atau kata sandi salah');go('dash')}
+function login(){const d=authMode==='daftar';return `<div class="card login"><div class="fy" style="font-size:30px;color:#fff">✦ ✦ ✦</div><h1 style="margin:4px 0;color:#7a2a5a">Rekapan by chewyzc</h1><div class="row" style="justify-content:center;margin:8px 0"><button class="${d?'':'pri'}" onclick="authMode='login';render()">Masuk</button><button class="${d?'pri':''}" onclick="authMode='daftar';render()">Daftar</button></div><form onsubmit="authGo();return false" style="text-align:left"><label>Email</label><input id="ae" type="email" autocomplete="email" inputmode="email"><label>Kata sandi</label><input id="ap" type="password" autocomplete="${d?'new-password':'current-password'}">${d?'<label>Ulangi kata sandi</label><input id="ap2" type="password" autocomplete="new-password">':''}<button class="pri" style="width:100%" type="submit">${d?'Buat akun':'Masuk'}</button></form><p class="note">Akun dan datamu tersimpan online, sinkron di semua perangkat. Tiap akun punya data sendiri yang tidak bisa dilihat orang lain.</p></div>`}
+SC.login=SC.login.replace('</defs>','<linearGradient id="yl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB3DA"/><stop offset=".6" stop-color="#FFD0E8"/><stop offset="1" stop-color="#FFE3F1"/></linearGradient></defs>').replace('fill="url(#y)"','fill="url(#yl)"');
+let curBg='';function setBg(k){if(k===curBg)return;curBg=k;document.getElementById('bg').innerHTML=SC[k]}
+function login(){return `<div class="card login"><div class="fy" style="font-size:34px;color:#FF8FC7">✦ ✦ ✦</div><div hidden>🍃</div><h1 style="margin:4px 0">Rekapan by chewyzc</h1><p class="note">Catat order, laba, dan garansi dengan tenang.</p><label style="display:block;text-align:left">Username</label><input autocomplete="username"><label style="display:block;text-align:left">Kata sandi</label><input type="password" autocomplete="current-password"><button class="pri" style="width:100%" onclick="go('dash')">Masuk</button><p class="note">Prototipe: belum ada verifikasi akun. Tombol ini hanya membuka dashboard.</p></div>`}
+
+const FB={apiKey:"AIzaSyDI5g9ojwQQeWXELQ1e2g-wYqEK6OSaIq0",authDomain:"rekapan-f3117.firebaseapp.com",projectId:"rekapan-f3117",storageBucket:"rekapan-f3117.firebasestorage.app",messagingSenderId:"734320626569",appId:"1:734320626569:web:1504133e6722bb0b3d6f58"};
+const FBOK=typeof firebase!=='undefined'&&!FB.apiKey.startsWith('ISI');let auth,db;
+if(FBOK){firebase.initializeApp(FB);auth=firebase.auth();db=firebase.firestore()}
+const DEFM=()=>({produk:['Netflix','Canva','Disney+'],tipe:['Personal','Sharing','Family'],durasi:['1 bulan','3 bulan','1 tahun'],sumber:['Shopee','WhatsApp','Instagram']});
+const fbErr=c=>({'auth/email-already-in-use':'Email sudah terdaftar','auth/invalid-credential':'Email atau kata sandi salah','auth/wrong-password':'Email atau kata sandi salah','auth/user-not-found':'Email atau kata sandi salah','auth/weak-password':'Kata sandi terlalu lemah','auth/network-request-failed':'Cek koneksi internet','auth/too-many-requests':'Terlalu banyak percobaan, coba lagi nanti'}[c]||'Gagal: '+c);
+async function authGo(){if(!FBOK)return toast('Firebase belum diisi di index.html');const e=document.getElementById('ae').value.trim().toLowerCase(),p=document.getElementById('ap').value;
+if(!/^\S+@\S+\.\S+$/.test(e))return toast('Format email salah');
+try{if(authMode==='daftar'){if(p.length<8)return toast('Kata sandi minimal 8 karakter');if(p!==document.getElementById('ap2').value)return toast('Ulangi kata sandi tidak sama');await auth.createUserWithEmailAndPassword(e,p);toast('Akun dibuat')}else{await auth.signInWithEmailAndPassword(e,p)}}catch(x){toast(fbErr(x.code))}}
+async function start(u){uref=db.collection('users').doc(u.uid);S={orders:[],master:DEFM(),klaim:[]};
+try{const m=await uref.collection('meta').doc('master').get();if(m.exists){S.master=JSON.parse(m.data().d);cache.__m=m.data().d}else{save()}}catch(e){return toast('Gagal memuat data. Cek aturan Firestore')}
+if(unsub)unsub();let first=true;
+unsub=uref.collection('orders').onSnapshot(sn=>{let ch=first||sn.size!==S.orders.length;const arr=[];sn.forEach(d=>{const o=d.data();arr.push(o);const j=js(o);if(cache[o.id]!==j){cache[o.id]=j;ch=true}});if(!ch)return;S.orders=arr.sort((a,b)=>(a.dibuat||0)-(b.dibuat||0));if(first){first=false;go('dash')}else if(page!=='add'&&page!=='login'&&!(document.activeElement&&document.activeElement.tagName==='INPUT'))render()},()=>toast('Gagal sinkron data'))}
+async function logout(){if(unsub)unsub();unsub=null;uref=null;Object.keys(cache).forEach(k=>delete cache[k]);S={orders:[],master:DEFM(),klaim:[]};if(auth)await auth.signOut();go('login')}
+function imp(){let o=null;try{o=JSON.parse(localStorage.getItem(K))}catch(e){}if(!o||!o.orders||!o.orders.length)return toast('Tidak ada data lama di browser ini');const ids=new Set(S.orders.map(x=>x.id));let n=0;o.orders.forEach(x=>{if(!ids.has(x.id)){S.orders.push(x);n++}});['produk','tipe','durasi','sumber'].forEach(k=>(o.master[k]||[]).forEach(v=>{if(!S.master[k].includes(v))S.master[k].push(v)}));save();render();toast(n+' order diimpor')}
+if(FBOK)auth.onAuthStateChanged(u=>{if(u)start(u);else if(page!=='login')go('login')});
+render();
+</script></body></html>
